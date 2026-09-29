@@ -1,0 +1,776 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<title>ARG Architecture</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef1f4; --bg-raised: #ffffff; --ink: #1a232f; --ink-dim: #4c5b6b; --ink-faint: #7c8998;
+    --rule: #ccd6e0; --rule-soft: #dde5ec;
+    --accent: #a8631b; --accent-ink: #7a4712; --accent-bg: #f4e6d3;
+    --crit: #a3332a; --crit-bg: #f6dcd8;
+    --warn: #8a6d12; --warn-bg: #f2e7c8;
+    --safe: #2f6b46; --safe-bg: #dcecdf;
+    --code-bg: #e4e9ee;
+    --shadow: 0 1px 2px rgba(26,35,47,.06), 0 8px 24px rgba(26,35,47,.05);
+    --font-display: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-serif: 'IBM Plex Serif', Georgia, serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1620; --bg-raised: #161f2b; --ink: #e3e9ef; --ink-dim: #a9b6c4; --ink-faint: #7f8fa0;
+      --rule: #2a3543; --rule-soft: #202b38;
+      --accent: #e0a458; --accent-ink: #f0c184; --accent-bg: #2b2313;
+      --crit: #e5776a; --crit-bg: #3a1f1c;
+      --warn: #d8bd6b; --warn-bg: #332c15;
+      --safe: #7fc79a; --safe-bg: #17301f;
+      --code-bg: #1b2530;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1620; --bg-raised: #161f2b; --ink: #e3e9ef; --ink-dim: #a9b6c4; --ink-faint: #7f8fa0;
+    --rule: #2a3543; --rule-soft: #202b38;
+    --accent: #e0a458; --accent-ink: #f0c184; --accent-bg: #2b2313;
+    --crit: #e5776a; --crit-bg: #3a1f1c;
+    --warn: #d8bd6b; --warn-bg: #332c15;
+    --safe: #7fc79a; --safe-bg: #17301f;
+    --code-bg: #1b2530;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+  img, svg { max-width: 100%; }
+  [hidden] { display: none !important; }
+  a { color: var(--accent-ink); }
+
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; color: var(--ink); letter-spacing: -0.01em; }
+  code { font-family: var(--font-display); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+  pre code { background: none; padding: 0; }
+
+  .page { max-width: 900px; margin: 0 auto; padding: 0 28px 100px; }
+  @media (max-width: 640px) { .page { padding: 0 16px 80px; } }
+
+  /* ---- Cover ---- */
+  .cover { padding: 64px 0 40px; border-bottom: 3px double var(--rule); margin-bottom: 40px; }
+  .cover .doctype { font-family: var(--font-display); font-size: 11.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-ink); margin: 0 0 18px; display: flex; align-items: center; gap: 10px; }
+  .cover .doctype::before { content: "◎"; }
+  .cover h1 { font-size: clamp(30px, 5vw, 44px); margin: 0 0 14px; max-width: 18ch; }
+  .cover .sub { font-size: 17px; color: var(--ink-dim); max-width: 60ch; margin: 0 0 26px; }
+  .cover .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px 26px; border-top: 1px solid var(--rule); padding-top: 18px; }
+  .cover .meta-grid div { font-size: 12.5px; }
+  .cover .meta-grid .k { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-size: 10.5px; margin-bottom: 3px; }
+  .cover .meta-grid .v { color: var(--ink); font-weight: 500; }
+
+  /* ---- TOC ---- */
+  .toc { background: var(--bg-raised); border: 1px solid var(--rule); border-radius: 12px; padding: 22px 26px; margin-bottom: 48px; box-shadow: var(--shadow); }
+  .toc h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 0 0 14px; }
+  .toc ol { margin: 0; padding-left: 0; list-style: none; columns: 2; column-gap: 30px; }
+  @media (max-width: 560px) { .toc ol { columns: 1; } }
+  .toc li { break-inside: avoid; margin-bottom: 7px; font-size: 13.5px; }
+  .toc li a { color: var(--ink-dim); border-bottom: none; }
+  .toc li a:hover { color: var(--accent-ink); }
+  .toc li b { font-family: var(--font-display); color: var(--ink-faint); font-weight: 500; margin-right: 6px; }
+
+  /* ---- Sections ---- */
+  section { margin-bottom: 54px; scroll-margin-top: 20px; }
+  .snum { font-family: var(--font-display); color: var(--accent-ink); font-size: 13px; margin-right: 10px; }
+  h2.stitle { font-size: 22px; display: flex; align-items: baseline; margin-bottom: 6px; border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+  .sdek { color: var(--ink-dim); font-size: 14.5px; margin: 12px 0 26px; max-width: 66ch; }
+  h3 { font-size: 16px; margin: 30px 0 10px; }
+  h3 .snum-sub { color: var(--ink-faint); font-weight: 500; margin-right: 8px; }
+  h3:first-of-type { margin-top: 0; }
+  p { max-width: 70ch; }
+  ul, ol.list { max-width: 68ch; }
+  li { margin-bottom: 6px; }
+
+  .lede-p { font-size: 16.5px; color: var(--ink-dim); font-family: var(--font-serif); max-width: 68ch; }
+
+  /* ---- callouts ---- */
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-bg); border-radius: 0 10px 10px 0; padding: 16px 20px; margin: 22px 0; }
+  .callout p { margin: 0; max-width: none; color: var(--accent-ink); font-size: 14.5px; }
+  .callout p + p { margin-top: 8px; }
+  .callout .cl-label { font-family: var(--font-display); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent-ink); opacity: .8; margin-bottom: 6px; display: block; }
+
+  .verdict { border: 1px solid var(--safe); background: var(--safe-bg); border-radius: 10px; padding: 16px 20px; margin: 22px 0; }
+  .verdict p { margin: 0; color: var(--safe); font-size: 14.5px; max-width: none; }
+  .verdict .cl-label { font-family: var(--font-display); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; opacity: .85; margin-bottom: 6px; display: block; }
+
+  /* ---- figures ---- */
+  figure { margin: 30px 0; background: var(--bg-raised); border: 1px solid var(--rule); border-radius: 12px; padding: 20px 20px 16px; box-shadow: var(--shadow); }
+  figure svg { display: block; margin: 0 auto; color: var(--ink); width: 100%; height: auto; }
+  figcaption { font-size: 12.5px; color: var(--ink-faint); margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--rule); }
+  figcaption b { color: var(--ink-dim); font-family: var(--font-display); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .fig-explain { margin-top: 10px; }
+  .fig-explain ol { margin: 8px 0 0; padding-left: 20px; font-size: 13px; color: var(--ink-dim); }
+  .fig-explain ol li { margin-bottom: 5px; }
+  .fig-explain ol li b { color: var(--ink); }
+
+  /* ---- tables ---- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); background: var(--bg-raised); margin: 20px 0; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th { font-family: var(--font-display); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); background: var(--rule-soft); }
+  tbody tr:last-child td { border-bottom: none; }
+  table.compare th, table.compare td { text-align: center; }
+  table.compare th:first-child, table.compare td:first-child { text-align: left; }
+  .yes { color: var(--safe); font-weight: 600; }
+  .no { color: var(--ink-faint); }
+  .partial { color: var(--warn); font-weight: 600; }
+
+  /* ---- roadmap-ish step list ---- */
+  .steps { display: flex; flex-direction: column; border-left: 2px solid var(--rule); padding-left: 26px; margin: 22px 0; }
+  .step { position: relative; padding-bottom: 22px; }
+  .step:last-child { padding-bottom: 0; }
+  .step::before { content: ""; position: absolute; left: -31.5px; top: 3px; width: 11px; height: 11px; border-radius: 50%; background: var(--bg); border: 2px solid var(--accent); }
+  .step .st { font-family: var(--font-display); font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .step .sd { font-size: 13.5px; color: var(--ink-dim); max-width: 62ch; }
+  .step .sd code { font-size: 12px; }
+
+  /* ---- risk cards ---- */
+  .risks { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin: 22px 0; }
+  .risk { border: 1px solid var(--rule); background: var(--bg-raised); border-radius: 10px; padding: 15px 17px; box-shadow: var(--shadow); }
+  .risk .rk { font-family: var(--font-display); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--crit); margin-bottom: 5px; }
+  .risk .rt { font-weight: 600; font-size: 13.5px; margin-bottom: 5px; }
+  .risk .rd { font-size: 12.5px; color: var(--ink-dim); }
+  .risk .rm { font-size: 12px; color: var(--safe); margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--rule); }
+
+  pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.55; margin: 16px 0; }
+  .k1 { color: var(--accent-ink); } .k2 { color: var(--safe); }
+
+  footer { padding: 30px 0 60px; border-top: 1px solid var(--rule); margin-top: 40px; }
+  footer p { font-size: 12px; color: var(--ink-faint); max-width: 62ch; }
+
+  .backtotop { position: fixed; right: 18px; bottom: 18px; background: var(--bg-raised); border: 1px solid var(--rule); box-shadow: var(--shadow); color: var(--ink-dim); font-family: var(--font-display); font-size: 11px; padding: 9px 13px; border-radius: 999px; z-index: 5; }
+</style>
+
+<div class="page">
+  <div class="cover">
+    <p class="doctype">Solution proposal &amp; architecture document</p>
+    <h1>ARG — Authorization Relationship Graph</h1>
+    <p class="sub">A realtime, ORM-native semantic-analysis strategy for detecting Broken Object-Level
+      Authorization (BOLA) and related access-control defects, designed as the core engine of the
+      Zero Trace universal IDE plugin.</p>
+    <div class="meta-grid">
+      <div><div class="k">Project</div><div class="v">Zero Trace</div></div>
+      <div><div class="k">Document</div><div class="v">Solution proposal v1</div></div>
+      <div><div class="k">Scope</div><div class="v">Detection engine architecture</div></div>
+      <div><div class="k">Basis</div><div class="v">17 papers + implementation plan</div></div>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><b>1</b><a href="#problem">Problem statement</a></li>
+      <li><b>2</b><a href="#strategy">Proposed strategy</a></li>
+      <li><b>3</b><a href="#why-better">Why this is better</a></li>
+      <li><b>4</b><a href="#architecture">System architecture</a></li>
+      <li><b>5</b><a href="#engine">The ARG decision engine</a></li>
+      <li><b>6</b><a href="#realtime">Realtime execution model</a></li>
+      <li><b>7</b><a href="#methodology">Working methodology (walkthrough)</a></li>
+      <li><b>8</b><a href="#roadmap">Implementation roadmap</a></li>
+      <li><b>9</b><a href="#risks">Risks &amp; mitigations</a></li>
+      <li><b>10</b><a href="#conclusion">Conclusion</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <section id="problem">
+    <h2 class="stitle"><span class="snum">1</span>Problem statement</h2>
+    <p class="lede-p">Broken Access Control has held the #1 spot in the OWASP Top 10 since 2021, and Broken
+      Object-Level Authorization (BOLA/IDOR) is its most common form in APIs. The defect is structurally simple —
+      a handler fetches or modifies a record by an identifier the caller supplied, without checking that the
+      caller is allowed to touch <em>that specific record</em> — yet it survives code review constantly, because
+      the request that exploits it is syntactically identical to a legitimate one. <code>GET /orders/502</code> is
+      not malformed; it is only wrong if the caller isn't order 502's owner. No input-validation rule catches that.</p>
+
+    <p>Three properties of this defect class shape everything that follows:</p>
+    <ul>
+      <li><b>It requires application semantics, not syntax.</b> Detecting it means knowing which table a request
+        touches, who is allowed to touch it, and whether the code actually checked that before acting.</li>
+      <li><b>It is invisible at review time and at request time alike.</b> The code compiles; the request returns
+        200. Nothing looks wrong until someone specifically tests cross-account access.</li>
+      <li><b>Existing tooling detects it late, narrowly, or not at all.</b> Our review of 17 papers on this exact
+        problem (Section 3) found static tools that need manual authorization specs, taint scanners that answer
+        "is there any check?" rather than "is there the <em>right</em> check?", and dynamic fuzzers that need a
+        running application and a browser to even start.</li>
+    </ul>
+
+    <p>The goal of this document is to specify a detection strategy that can sit <em>inside the editor</em>, run
+      on code the developer hasn't committed yet, understand the authorization semantics automatically, and stay
+      fast enough to be useful while typing — then propose the concrete architecture that implements it.</p>
+  </section>
+
+  <!-- 2 -->
+  <section id="strategy">
+    <h2 class="stitle"><span class="snum">2</span>Proposed strategy</h2>
+    <p class="sdek">One sentence: <b>infer who-owns-what automatically from the ORM schema, evaluate it
+      incrementally the way a compiler evaluates only what changed, and call a language model only when the
+      deterministic graph genuinely cannot decide — never trusting it without independent evidence.</b></p>
+
+    <h3><span class="snum-sub">2.1</span>Three borrowed ideas, one new combination</h3>
+    <p>No single existing tool combines automatic authorization-model inference, incremental analysis, and
+      disciplined LLM use. Each exists separately in the literature we reviewed; the strategy is to combine them
+      deliberately:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Idea</th><th>Where it comes from</th><th>How ARG adapts it</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Classify the relationship, don't just trace taint</b></td>
+            <td>BolaRay (CCS'24) infers four object-level authorization models — Ownership, Membership,
+              Hierarchical, Status — from database foreign keys.</td>
+            <td>Read the same relationships straight from ORM annotations (<code>@ManyToOne</code>,
+              <code>@JoinColumn</code>, <code>belongs_to</code>, <code>ForeignKey()</code>) instead of
+              reverse-engineering them from raw SQL text — skipping BolaRay's hardest step entirely.</td>
+          </tr>
+          <tr>
+            <td><b>Analyze on demand, not the whole program</b></td>
+            <td>Zipper (USENIX Sec'25) caches a symbolic summary per function and only re-derives what a change
+              could affect, instead of eagerly analyzing every path.</td>
+            <td>Cache one ARG summary per function, keyed by an AST-subtree hash; an edit invalidates only that
+              function and its direct callers/callees.</td>
+          </tr>
+          <tr>
+            <td><b>Let the model propose, never decide</b></td>
+            <td>IRIS (ICLR'25) has an LLM guess taint specs, a deterministic engine test them against real code
+              paths, and the LLM re-verify only concrete candidates with context.</td>
+            <td>An LLM may propose which field is the owner ID or which helper method is an authorization check;
+              a deterministic pass must find AST/dataflow evidence for that guess before it is ever shown as
+              anything more than "needs review."</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="snum-sub">2.2</span>What "solving the issue better" means here</h3>
+    <p>Concretely, the strategy is designed to answer a sharper question than prior tools ask. A generic taint
+      scanner asks: <i>is there any authorization check on this path?</i> ARG asks: <i>is there the check this
+      specific relationship requires?</i> A post-login page that checks a role but not object ownership passes the
+      first question and correctly fails the second — which is exactly the shape of the CVE-class bugs cited
+      throughout Section 3.</p>
+  </section>
+
+  <!-- 3 -->
+  <section id="why-better">
+    <h2 class="stitle"><span class="snum">3</span>Why this is better than existing approaches</h2>
+    <p class="sdek">Measured against the same four capabilities the literature review in Section 1 showed no single
+      paper satisfies together.</p>
+
+    <div class="table-wrap">
+      <table class="compare">
+        <thead><tr><th>Approach</th><th>No manual specs</th><th>Multi-ORM / language</th><th>Fast enough to be live</th><th>Bridges to enforcement</th></tr></thead>
+        <tbody>
+          <tr><td>BolaRay alone</td><td class="yes">Yes</td><td class="no">PHP + raw SQL only</td><td class="no">Up to 427 s / app</td><td class="no">Report only</td></tr>
+          <tr><td>YASA alone</td><td class="partial">Generic taint only</td><td class="yes">Yes</td><td class="partial">Batch / CI-grade</td><td class="no">Report only</td></tr>
+          <tr><td>Zipper alone</td><td class="partial">Generic taint only</td><td class="no">PHP only</td><td class="yes">On-demand, cached</td><td class="no">Report only</td></tr>
+          <tr><td>IRIS alone</td><td class="yes">Yes, via LLM specs</td><td class="no">Java only</td><td class="no">Whole-repo LLM calls</td><td class="no">Report only</td></tr>
+          <tr><td>Zero Trace plan (as written)</td><td class="no">Manual owner-field mapping</td><td class="no">Java/Spring only</td><td class="partial">Not specified</td><td class="yes">Yes, by design</td></tr>
+          <tr><td><b>ARG (this proposal)</b></td><td class="yes">Yes — read from ORM schema</td><td class="yes">Additive per-ORM frontends</td><td class="yes">Function-scoped, cached</td><td class="yes">Yes — one shared manifest</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><span class="snum-sub">3.1</span>The four reasons, stated plainly</h3>
+    <ul>
+      <li><b>Precision beyond taint tracking.</b> BolaRay's own evaluation found zero false negatives against 15
+        known CVEs precisely because it checks for the <i>correct</i> relationship-specific guard, not merely
+        "a guard exists." A generic taint scanner cannot express that distinction; ARG is built around it from
+        the start.</li>
+      <li><b>No manual specification burden.</b> BolaRay still requires ~13 lines of hand-written Data Access
+        Layer specification per framework API it doesn't recognize — "a one-time effort... considered a barrier
+        to adopting the tool," in the authors' own words. ARG removes that barrier for any ORM that declares
+        relationships as annotations, which covers the large majority of modern backend frameworks.</li>
+      <li><b>Speed that matches the tool's location.</b> A tool that takes 30 seconds to 7 minutes per application
+        (BolaRay, YASA, Zipper) is a CI-stage tool. Placing the same class of analysis inside an editor requires
+        Zipper's on-demand, per-function caching discipline applied specifically to the authorization-model
+        problem — which no existing BOLA-specific tool does.</li>
+      <li><b>A finding that becomes enforcement.</b> Every academic tool reviewed stops at a report. ARG emits the
+        same manifest format your own Zero Trace plan already designs a runtime guard around, so a finding in the
+        editor, a failed CI check, and a blocked production request can all cite the same rule ID.</li>
+    </ul>
+
+    <div class="verdict">
+      <span class="cl-label">Net effect</span>
+      <p>ARG is not a new detection algorithm competing with BolaRay, YASA, or IRIS — it is the specific
+        combination of their individually-solved sub-problems (model inference, incremental speed, guarded LLM
+        use) that none of them combine, applied to the one vulnerability class where combining them matters most.</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section id="architecture">
+    <h2 class="stitle"><span class="snum">4</span>System architecture</h2>
+    <p class="sdek">Three layers, one shared artifact between them. Figure 1 shows the whole system; Sections 5–6
+      unpack the middle layer, which is where the actual research contribution lives.</p>
+
+    <figure>
+      <svg viewBox="0 0 880 560" role="img" aria-label="An editor triggers the four-stage ARG engine, which emits one manifest consumed independently by IDE diagnostics, a CI gate, and the runtime guard.">
+        <defs>
+          <marker id="ah1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <polygon points="0,0 8,4 0,8" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- Editor -->
+        <rect x="340" y="18" width="200" height="52" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="440" y="39" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Editor / LSP Client</text>
+        <text x="440" y="56" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.65">edited function</text>
+
+        <line x1="440" y1="70" x2="440" y2="108" stroke="currentColor" stroke-width="1.5" marker-end="url(#ah1)"/>
+        <text x="454" y="93" font-size="10" fill="currentColor" opacity="0.8">re-parse &#8594; AST subtree</text>
+
+        <!-- ARG engine outer -->
+        <rect x="50" y="108" width="780" height="192" rx="10" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 4" opacity="0.55"/>
+        <text x="66" y="128" font-size="10.5" font-weight="600" fill="currentColor" opacity="0.75" letter-spacing="0.03em">ARG ENGINE &#8212; LAYER 1</text>
+
+        <!-- box1 -->
+        <rect x="75" y="150" width="170" height="90" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="160" y="180" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Schema Builder</text>
+        <text x="160" y="198" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">reads ORM relationship</text>
+        <text x="160" y="211" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">annotations (Step 1)</text>
+
+        <line x1="245" y1="195" x2="263" y2="195" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah1)"/>
+
+        <!-- box2 -->
+        <rect x="265" y="150" width="170" height="90" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="350" y="180" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Model Classifier</text>
+        <text x="350" y="198" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">Own / Member / Hier /</text>
+        <text x="350" y="211" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">Status (Step 2)</text>
+
+        <line x1="435" y1="195" x2="453" y2="195" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah1)"/>
+
+        <!-- box3 -->
+        <rect x="455" y="150" width="170" height="90" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="540" y="180" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Guard Verifier</text>
+        <text x="540" y="198" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">predicate matches the</text>
+        <text x="540" y="211" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">model? (Steps 3&#8211;4)</text>
+
+        <line x1="625" y1="195" x2="643" y2="195" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 3" marker-end="url(#ah1)"/>
+
+        <!-- box4 accent -->
+        <g style="color:var(--accent-ink)">
+          <rect x="645" y="150" width="160" height="90" rx="8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <text x="725" y="180" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Guarded Inference</text>
+          <text x="725" y="198" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.8">LLM proposes,</text>
+          <text x="725" y="211" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.8">AST verifies (async)</text>
+        </g>
+
+        <line x1="440" y1="300" x2="440" y2="336" stroke="currentColor" stroke-width="1.5" marker-end="url(#ah1)"/>
+        <text x="454" y="322" font-size="10" fill="currentColor" opacity="0.8">emits findings</text>
+
+        <!-- Manifest -->
+        <g style="color:var(--accent-ink)">
+          <rect x="330" y="336" width="220" height="52" rx="8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="440" y="358" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">zerotrace-policy.json</text>
+          <text x="440" y="375" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.8">single source of truth</text>
+        </g>
+
+        <!-- fan out -->
+        <line x1="440" y1="388" x2="170" y2="448" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah1)"/>
+        <line x1="440" y1="388" x2="440" y2="448" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah1)"/>
+        <line x1="440" y1="388" x2="710" y2="448" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah1)"/>
+        <text x="230" y="420" font-size="9.5" fill="currentColor" opacity="0.75">squiggle + quick-fix</text>
+        <text x="452" y="420" font-size="9.5" fill="currentColor" opacity="0.75">fail build</text>
+        <text x="600" y="420" font-size="9.5" fill="currentColor" opacity="0.75">ALLOW / DENY</text>
+
+        <!-- consumers -->
+        <rect x="75" y="450" width="190" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="170" y="476" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">IDE Diagnostics</text>
+        <text x="170" y="493" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">Layer 2 &#183; developer</text>
+
+        <rect x="345" y="450" width="190" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="440" y="476" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">CI Gate</text>
+        <text x="440" y="493" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">Layer 2 &#183; pull request</text>
+
+        <rect x="615" y="450" width="190" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="710" y="476" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Runtime Guard</text>
+        <text x="710" y="493" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">Layer 2 &#183; production</text>
+      </svg>
+      <figcaption>
+        <b>Figure 1</b> — One manifest, three independent consumers. The editor is the only component the
+        developer sees while coding; the CI gate and runtime guard read the identical manifest, so an IDE hint,
+        a blocked pull request, and a blocked production request can all cite the same rule ID and reasoning.
+        <div class="fig-explain">
+          <ol>
+            <li><b>Editor triggers re-analysis.</b> Every edit to a function sends its AST subtree into Layer 1 —
+              never the whole file or workspace.</li>
+            <li><b>Schema Builder</b> reads the ORM's own relationship declarations for the entities the edited
+              function touches.</li>
+            <li><b>Model Classifier</b> labels each user&#8596;object relationship as one of four canonical
+              authorization models (Section 5).</li>
+            <li><b>Guard Verifier</b> checks whether the code actually enforces the check that model requires.</li>
+            <li><b>Guarded Inference</b> only activates when Guard Verifier can't resolve a relationship
+              deterministically — it runs off to the side, asynchronously, and never blocks the first three
+              stages.</li>
+            <li><b>The manifest</b> is the only handoff point between "finding" and "action" — every downstream
+              consumer reads it, none of them re-derive it.</li>
+          </ol>
+        </div>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- 5 -->
+  <section id="engine">
+    <h2 class="stitle"><span class="snum">5</span>The ARG decision engine</h2>
+    <p class="sdek">This is the algorithm inside the dashed box in Figure 1 — the actual research contribution.
+      It is a direct adaptation of BolaRay's four inference rules, reading schema from ORM annotations instead of
+      reconstructing it from SQL text, with an explicit escape hatch for cases it can't resolve alone.</p>
+
+    <figure>
+      <svg viewBox="0 0 760 800" role="img" aria-label="Flowchart: locate a sensitive operation, build schema, classify the relationship, check the guard; if the guard doesn't match, try guarded LLM inference with AST verification before concluding confirmed or needs-review.">
+        <defs>
+          <marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <polygon points="0,0 8,4 0,8" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- N1 -->
+        <rect x="240" y="16" width="280" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="380" y="40" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Sensitive operation located</text>
+        <text x="380" y="56" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">repo call reached from an entry point</text>
+        <line x1="380" y1="72" x2="380" y2="104" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+
+        <!-- N2 -->
+        <rect x="240" y="106" width="280" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="380" y="130" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Build schema</text>
+        <text x="380" y="146" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">read ORM relationship annotations</text>
+        <line x1="380" y1="162" x2="380" y2="194" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+
+        <!-- N3 -->
+        <rect x="240" y="196" width="280" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="380" y="220" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Classify relationship</text>
+        <text x="380" y="236" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">Ownership &#183; Membership &#183; Hierarchical &#183; Status</text>
+        <line x1="380" y1="252" x2="380" y2="284" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+
+        <!-- N4 -->
+        <rect x="240" y="286" width="280" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="380" y="310" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Search guard predicate</text>
+        <text x="380" y="326" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">on this operation's condition / WHERE</text>
+        <line x1="380" y1="342" x2="380" y2="374" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+
+        <!-- D1 diamond -->
+        <polygon points="380,378 500,438 380,498 260,438" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="380" y="432" text-anchor="middle" font-size="11.5" font-weight="600" fill="currentColor">Predicate matches</text>
+        <text x="380" y="447" text-anchor="middle" font-size="11.5" font-weight="600" fill="currentColor">the classified model?</text>
+
+        <!-- D1 -> ALLOW -->
+        <line x1="500" y1="438" x2="640" y2="438" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <text x="570" y="428" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.8">yes</text>
+        <g style="color:var(--safe)">
+          <rect x="640" y="412" width="110" height="52" rx="8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="695" y="443" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">ALLOW</text>
+        </g>
+
+        <!-- D1 -> N5 (no, down) -->
+        <line x1="380" y1="498" x2="380" y2="534" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <text x="394" y="520" font-size="10" fill="currentColor" opacity="0.8">no</text>
+
+        <!-- N5 accent -->
+        <g style="color:var(--accent-ink)">
+          <rect x="240" y="536" width="280" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <text x="380" y="560" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">Guarded Inference</text>
+          <text x="380" y="576" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.8">LLM proposes an owner / guard mapping</text>
+        </g>
+        <line x1="380" y1="592" x2="380" y2="624" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+
+        <!-- D2 diamond -->
+        <polygon points="380,628 520,698 380,768 240,698" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="380" y="690" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">AST evidence confirms</text>
+        <text x="380" y="705" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">the proposed mapping?</text>
+
+        <!-- D2 -> NEEDS REVIEW -->
+        <line x1="520" y1="698" x2="640" y2="698" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+        <text x="580" y="688" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.8">yes</text>
+        <g style="color:var(--warn)">
+          <rect x="640" y="670" width="115" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="697" y="695" text-anchor="middle" font-size="11.5" font-weight="700" fill="currentColor">NEEDS</text>
+          <text x="697" y="710" text-anchor="middle" font-size="11.5" font-weight="700" fill="currentColor">REVIEW</text>
+        </g>
+
+        <!-- D2 -> CONFIRMED -->
+        <line x1="380" y1="768" x2="380" y2="776" stroke="currentColor" stroke-width="1.4"/>
+        <text x="394" y="748" font-size="10" fill="currentColor" opacity="0.8">no</text>
+        <g style="color:var(--crit)">
+          <rect x="240" y="778" width="280" height="20" rx="0" fill="none" stroke="none"/>
+        </g>
+        <line x1="380" y1="768" x2="380" y2="784" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah2)"/>
+      </svg>
+      <figcaption>
+        <b>Figure 2</b> — The four deterministic steps plus the guarded-inference escape hatch. Everything above
+        the first diamond runs on every edit; the accent-colored box only runs when the deterministic rules can't
+        decide, and its output is never accepted without a second, independent check.
+        <div class="fig-explain">
+          <ol>
+            <li><b>Step 1 — Schema.</b> No alias-tracing needed: the ORM already declares
+              <code>Order.ownerId &#8594; User.id</code>.</li>
+            <li><b>Step 2 — Classify.</b> A 1:n relationship from a user table is <b>Ownership</b>; an m:n via a
+              join entity is <b>Membership</b>; ownership chained through a parent object is <b>Hierarchical</b>;
+              a gating state column is <b>Status</b> — BolaRay's taxonomy, unchanged.</li>
+            <li><b>Step 3–4 — Verify.</b> The one question that matters: does a condition on this path bind
+              <i>this</i> user to <i>this</i> object, per the model from Step 2 — not merely "is there a
+              condition at all."</li>
+            <li><b>Guarded Inference.</b> Reserved for cases like a custom <code>isOwner()</code> helper or an
+              unfamiliar ORM pattern the deterministic rules don't recognize.</li>
+            <li><b>Two exits, never one.</b> A confirmed AST match becomes <code>NEEDS_REVIEW</code> (shown
+              distinctly in the UI); no match at all becomes <code>CONFIRMED: POTENTIAL_BOLA</code> — the model is
+              never allowed to manufacture an <code>ALLOW</code>.</li>
+          </ol>
+        </div>
+      </figcaption>
+    </figure>
+
+    <h3><span class="snum-sub">5.1</span>Worked example</h3>
+    <pre><code>@GetMapping("/api/orders/{id}")
+public Order getOrder(@PathVariable Long id) {
+    return orderRepository.findById(id);   <span class="k1">// Step 1: sensitive op on Order</span>
+}
+
+<span class="k2">// Schema (Step 1):      Order.ownerId -&gt; User.id
+// Classification (Step 2): Ownership model
+// Verify (Steps 3-4):   no predicate binds Order.ownerId to session userId
+// Result:               CONFIRMED: POTENTIAL_BOLA</span></code></pre>
+    <p>This is the same shape as the CVE-class bugs BolaRay reported 178 new instances of: a role or authentication
+      check may well be present elsewhere in the method, but the <i>object-level</i> check — does this user own
+      <i>this</i> order — is what's missing, and it is the only question this defect class actually turns on.</p>
+  </section>
+
+  <!-- 6 -->
+  <section id="realtime">
+    <h2 class="stitle"><span class="snum">6</span>Realtime execution model</h2>
+    <p class="sdek">The hardest claim in this document is "fast enough to run in an editor." Figure 3 shows the
+      mechanism that makes it true: two lanes triggered by the same edit, one bounded and blocking, one
+      unbounded and never blocking.</p>
+
+    <figure>
+      <svg viewBox="0 0 900 300" role="img" aria-label="Two lanes triggered by the same keystroke: a fast deterministic path under 300 milliseconds that always runs, and a background guarded-inference path that runs asynchronously and never blocks the UI.">
+        <defs>
+          <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <polygon points="0,0 8,4 0,8" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <text x="30" y="30" font-size="11" font-weight="700" fill="currentColor" letter-spacing="0.03em">FAST PATH — DETERMINISTIC (blocks the UI)</text>
+
+        <rect x="30" y="46" width="160" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="110" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">Keystroke</text>
+        <text x="110" y="80" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">in editor</text>
+        <line x1="190" y1="71" x2="216" y2="71" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah3)"/>
+
+        <rect x="218" y="46" width="200" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="318" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">Incremental re-parse</text>
+        <text x="318" y="80" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">+ cache lookup by AST hash</text>
+        <line x1="418" y1="71" x2="444" y2="71" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah3)"/>
+
+        <rect x="446" y="46" width="190" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="541" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">ARG re-evaluation</text>
+        <text x="541" y="80" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">edited function only</text>
+        <line x1="636" y1="71" x2="662" y2="71" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah3)"/>
+
+        <g style="color:var(--safe)">
+          <rect x="664" y="46" width="170" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="749" y="66" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">Diagnostic shown</text>
+          <text x="749" y="80" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.85">&lt; 300 ms</text>
+        </g>
+
+        <text x="30" y="130" font-size="10.5" fill="currentColor" opacity="0.7">runs on every keystroke &#8212; no network calls, no LLM on this lane</text>
+
+        <line x1="30" y1="160" x2="870" y2="160" stroke="currentColor" stroke-width="1" stroke-dasharray="2 4" opacity="0.4"/>
+
+        <text x="30" y="192" font-size="11" font-weight="700" fill="currentColor" letter-spacing="0.03em">BACKGROUND PATH — GUARDED INFERENCE (never blocks)</text>
+
+        <g style="color:var(--accent-ink)">
+          <rect x="30" y="208" width="160" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="110" y="228" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">Same edit</text>
+          <text x="110" y="242" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.75">unresolved relation</text>
+        </g>
+        <line x1="190" y1="233" x2="216" y2="233" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ah3)"/>
+
+        <g style="color:var(--accent-ink)">
+          <rect x="218" y="208" width="200" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="318" y="228" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">LLM proposes mapping</text>
+          <text x="318" y="242" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.75">cached by AST-subtree hash</text>
+        </g>
+        <line x1="418" y1="233" x2="444" y2="233" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ah3)"/>
+
+        <g style="color:var(--accent-ink)">
+          <rect x="446" y="208" width="190" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="541" y="228" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">Deterministic check</text>
+          <text x="541" y="242" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.75">for AST evidence</text>
+        </g>
+        <line x1="636" y1="233" x2="662" y2="233" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#ah3)"/>
+
+        <g style="color:var(--warn)">
+          <rect x="664" y="208" width="170" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <text x="749" y="226" text-anchor="middle" font-size="10.5" font-weight="700" fill="currentColor">Diagnostic upgraded</text>
+          <text x="749" y="240" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.85">~1&#8211;3 s, async</text>
+        </g>
+
+        <text x="30" y="286" font-size="10.5" fill="currentColor" opacity="0.7">only triggered when the fast path can't classify or verify a relationship</text>
+      </svg>
+      <figcaption>
+        <b>Figure 3</b> — Same trigger, two speeds. The top lane is the only one on the critical path of typing;
+        it never calls a network service. The bottom lane exists purely to convert an "unresolved" result into
+        either a corroborated <code>NEEDS_REVIEW</code> hint or nothing at all, on its own schedule.
+        <div class="fig-explain">
+          <ol>
+            <li><b>Cache-first.</b> Most keystrokes hit an unchanged function whose summary is already cached —
+              the fast lane usually does nothing more than a hash comparison.</li>
+            <li><b>Function-scoped invalidation.</b> An edit invalidates only the edited function and functions
+              that call it directly — never a full-workspace re-scan, which is what keeps BolaRay- and
+              YASA-scale analyses (30 s&#8211;7 min) out of the typing loop.</li>
+            <li><b>The background lane is optional, not required.</b> If it never returns, or returns "no
+              evidence," the developer still has the fast lane's verdict. Nothing in the UI waits on it.</li>
+          </ol>
+        </div>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- 7 -->
+  <section id="methodology">
+    <h2 class="stitle"><span class="snum">7</span>Working methodology — full walkthrough</h2>
+    <p class="sdek">Tracing one function from keystroke to production enforcement, through every diagram above,
+      end to end.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="st">1 &#183; Developer writes the handler</div>
+        <div class="sd">A controller method is added: <code>GET /api/orders/{id}</code>, calling
+          <code>orderRepository.findById(id)</code>. No ownership check is present.</div>
+      </div>
+      <div class="step">
+        <div class="st">2 &#183; Editor sends the AST subtree (Figure 1, top)</div>
+        <div class="sd">On save (MVP) or on keystroke (post-MVP), the LSP client sends only the changed function's
+          parsed subtree to the ARG engine.</div>
+      </div>
+      <div class="step">
+        <div class="st">3 &#183; Schema Builder reads the entity (Figure 1 / Figure 2, Step 1)</div>
+        <div class="sd">The <code>Order</code> entity's <code>@ManyToOne User owner</code> annotation is read
+          directly — no SQL reverse-engineering required.</div>
+      </div>
+      <div class="step">
+        <div class="st">4 &#183; Model Classifier labels the relationship (Figure 2, Step 2)</div>
+        <div class="sd">A 1:n relationship from the user table is classified <b>Ownership</b>.</div>
+      </div>
+      <div class="step">
+        <div class="st">5 &#183; Guard Verifier checks the call (Figure 2, Steps 3&#8211;4)</div>
+        <div class="sd">No predicate in <code>getOrder</code> compares <code>Order.ownerId</code> to the
+          authenticated <code>userId</code>. The deterministic path concludes <code>CONFIRMED: POTENTIAL_BOLA</code>
+          directly — Guarded Inference isn't even needed for a case this clear-cut.</div>
+      </div>
+      <div class="step">
+        <div class="st">6 &#183; Fast lane shows the diagnostic (Figure 3, top lane)</div>
+        <div class="sd">Under 300 ms after the save, the IDE shows a squiggle under
+          <code>orderRepository.findById(id)</code> with a quick fix: "Insert ownership check."</div>
+      </div>
+      <div class="step">
+        <div class="st">7 &#183; Manifest entry is written (Figure 1, center)</div>
+        <div class="sd">The same finding is appended to <code>zerotrace-policy.json</code> with a rule ID,
+          the entity, the required model, and the confidence tier (<code>CONFIRMED</code>).</div>
+      </div>
+      <div class="step">
+        <div class="st">8 &#183; CI gate blocks the pull request (Figure 1, bottom-center)</div>
+        <div class="sd">If the developer pushes anyway, <code>zerotrace check --fail-on=CONFIRMED</code> reads
+          the same manifest entry and fails the build before merge.</div>
+      </div>
+      <div class="step">
+        <div class="st">9 &#183; Runtime guard enforces it in production (Figure 1, bottom-right)</div>
+        <div class="sd">If the code ships regardless, the Layer 2 interposer loads the same manifest, sees the
+          <code>Ownership</code> rule for this endpoint, and returns 403 the first time a request's owner ID
+          doesn't match the session's user ID — independent of the static analysis having ever run against that
+          exact deployed binary.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="cl-label">Why the walkthrough matters</span>
+      <p>Every step above cites the same rule ID. That traceability — one inference, three enforcement points — is
+        the concrete, demonstrable version of "the runtime policy was generated from development-time source-code
+        analysis," which your own Zero Trace plan names as the strongest possible demonstration of the whole
+        project.</p>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="roadmap">
+    <h2 class="stitle"><span class="snum">8</span>Implementation roadmap</h2>
+    <p class="sdek">Maps directly onto the existing 4-week Zero Trace plan; only the content of the "authorization
+      analysis" step changes.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Days</th><th>Deliverable</th><th>Change from the original plan</th></tr></thead>
+        <tbody>
+          <tr><td>1&#8211;4</td><td>Vulnerable Spring Boot app</td><td>Add real <code>@ManyToOne</code>/<code>@JoinColumn</code> relationships, not a bare <code>ownerId</code> column, so schema-driven inference has something to read.</td></tr>
+          <tr><td>5&#8211;8</td><td>UAIR frontend for Spring/JPA</td><td>Extract routes as planned, plus entity relationship annotations (Figure 2, Step 1).</td></tr>
+          <tr><td>9&#8211;11</td><td>ARG builder</td><td>Replaces generic taint tracking with the 4-step classify-and-verify algorithm (Figure 2).</td></tr>
+          <tr><td>11&#8211;12</td><td>Guarded Inference</td><td>Formalizes the plan's existing "LLM proposes / deterministic verifier" sketch, scoped to unresolved relationships only.</td></tr>
+          <tr><td>12&#8211;17</td><td>Manifest + runtime guard</td><td>Unchanged — the format already matches what ARG emits.</td></tr>
+          <tr><td>18&#8211;20 (stretch)</td><td>Minimal LSP shim</td><td>New: a save-triggered VS Code diagnostics provider reading the manifest, proving the "IDE plugin" claim inside the 4-week window.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section id="risks">
+    <h2 class="stitle"><span class="snum">9</span>Risks &amp; mitigations</h2>
+    <div class="risks">
+      <div class="risk">
+        <div class="rk">False positives</div>
+        <div class="rt">Over-eager "every relationship needs a check"</div>
+        <div class="rd">BolaRay's own evaluation reported a 21.86% false-positive rate, mostly from
+          application-level roles it couldn't see.</div>
+        <div class="rm">Confidence tiers in the UI; scope v1 to write operations, as BolaRay itself does.</div>
+      </div>
+      <div class="risk">
+        <div class="rk">Coverage</div>
+        <div class="rt">Every ORM needs its own frontend</div>
+        <div class="rd">A JPA frontend contributes nothing to a Django or Prisma codebase.</div>
+        <div class="rm">Keep the shared IR narrow (entity, relationship, repo-call, guard) so new frontends are additive.</div>
+      </div>
+      <div class="risk">
+        <div class="rk">Performance</div>
+        <div class="rt">Realtime is the hardest claim here</div>
+        <div class="rd">Existing tools in this space report 30 s to 7 min per run.</div>
+        <div class="rm">Function-scoped caching (Figure 3); full rebuild stays a save/CI-time operation.</div>
+      </div>
+      <div class="risk">
+        <div class="rk">LLM trust</div>
+        <div class="rt">A confident, wrong LLM guess</div>
+        <div class="rd">An invented owner-field mapping is worse than no suggestion.</div>
+        <div class="rm">Guarded Inference never flips a finding alone (Figure 2); always badged distinctly.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="conclusion">
+    <h2 class="stitle"><span class="snum">10</span>Conclusion</h2>
+    <p>ARG is not a claim that any individual idea in this document is novel — BolaRay's model taxonomy,
+      Zipper's on-demand analysis, and IRIS's guarded LLM loop are each published, evaluated work. The proposal is
+      that combining them, specifically for the authorization-relationship problem and specifically inside an
+      editor, closes a gap that is visible across all 17 papers reviewed but closed by none of them: a tool that
+      infers authorization semantics automatically, runs fast enough to be live, uses a language model without
+      trusting it blindly, and produces one artifact that an IDE, a CI pipeline, and a production guard can all
+      act on identically.</p>
+  </section>
+
+  <footer>
+    <p>Basis: full text of 17 papers in <code>Reference Papers/</code> and
+      <code>Zero_Trace_4_Week_Implementation_Plan.docx</code>. See the companion research-synthesis artifact,
+      "Zero Trace Live," for the complete paper-by-paper reference table.</p>
+  </footer>
+</div>
+
+</body></html>
